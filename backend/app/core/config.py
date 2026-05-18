@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -38,6 +39,23 @@ class Settings(BaseSettings):
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     spacy_model: str = "en_core_web_sm"
     cluster_similarity_threshold: float = 0.78
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def _coerce_to_asyncpg(cls, value: str) -> str:
+        """Railway / Heroku / many managed Postgres providers hand out URLs as
+        `postgresql://...` (libpq form). SQLAlchemy's async engine needs
+        `postgresql+asyncpg://...`. Convert transparently so the platform's
+        injected DATABASE_URL works without manual editing."""
+        if not isinstance(value, str):
+            return value
+        if value.startswith("postgresql+"):
+            return value  # already has a driver scheme
+        if value.startswith("postgres://"):
+            value = "postgresql://" + value[len("postgres://"):]
+        if value.startswith("postgresql://"):
+            return "postgresql+asyncpg://" + value[len("postgresql://"):]
+        return value
 
 
 @lru_cache
