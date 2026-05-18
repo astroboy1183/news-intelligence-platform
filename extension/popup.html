@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>NewsIntel</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <h1>📰 NewsIntel</h1>
+      <button id="settings-btn" title="Settings">⚙</button>
+    </header>
+
+    <section id="settings-panel" hidden>
+      <label>
+        API URL
+        <input id="api-url" type="url" placeholder="http://localhost:8000" />
+      </label>
+      <button id="save-settings">Save</button>
+    </section>
+
+    <section id="status" class="muted">Looking up this story…</section>
+
+    <section id="result" hidden>
+      <div class="story-name" id="story-name"></div>
+      <div class="meta">
+        <span id="source-count"></span>
+        <span class="dot">·</span>
+        <span id="first-by"></span>
+      </div>
+
+      <ul class="tldr" id="tldr" hidden></ul>
+
+      <h2>Other coverage</h2>
+      <ul id="coverage" class="coverage"></ul>
+
+      <div class="lean">
+        <h3>Lean spread</h3>
+        <div id="lean-bars" class="bars"></div>
+      </div>
+
+      <a id="open-story" class="cta" target="_blank">Open full story on NewsIntel →</a>
+    </section>
+
+    <section id="empty" hidden class="muted">
+      No story match yet. Try a major news outlet — the article needs to have
+      been ingested by NewsIntel.
+    </section>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
