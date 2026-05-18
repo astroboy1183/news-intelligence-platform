@@ -19,11 +19,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         gcc g++ make curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Python deps in their own layer.
+# Python deps in their own layer. Docker layer caching is enough — this
+# layer only re-runs when pyproject.toml changes.
 COPY pyproject.toml ./
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --upgrade pip && \
-    pip install -e .
+RUN pip install --upgrade pip && pip install -e .
 
 # spaCy model in its own layer.
 RUN python -m spacy download en_core_web_sm
