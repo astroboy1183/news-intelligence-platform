@@ -17,13 +17,16 @@ class Settings(BaseSettings):
     # In prod set in .env e.g. "https://newsintel.vercel.app,http://localhost:3000"
     cors_origins: str = "*"
 
-    database_url: str = "postgresql+asyncpg://nip:nip_pass@localhost:5432/nip"
+    # These defaults are deliberate non-credentials — they only apply when no
+    # env var is provided, and the DB connection will fail fast if you actually
+    # try to use them. Always set DATABASE_URL via .env.
+    database_url: str = "postgresql+asyncpg://nip:CHANGE_ME@localhost:5432/nip"
 
     redis_url: str = "redis://localhost:6379/0"
 
     s3_endpoint_url: str = "http://localhost:9000"
-    s3_access_key: str = "minioadmin"
-    s3_secret_key: str = "minioadmin"
+    s3_access_key: str = "CHANGE_ME"
+    s3_secret_key: str = "CHANGE_ME"
     s3_bucket_audio: str = "audio"
 
     prefect_api_url: str = "http://localhost:4200/api"
