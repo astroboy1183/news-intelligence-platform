@@ -33,8 +33,10 @@ RUN python -c "import nltk; nltk.download('punkt', quiet=True); nltk.download('p
 
 # App code last — most frequent change.
 COPY . .
+RUN chmod +x scripts/start-prod.sh
 
 EXPOSE 8000
-# Shell form so ${PORT} from Railway/Heroku-style platforms gets expanded.
-# Falls back to 8000 for local dev.
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips=*
+# start-prod.sh runs both the Prefect scheduler (background) and uvicorn
+# (foreground) so a single container handles API + ingest/enrich/cluster.
+# Disable the scheduler half by setting RUN_SCHEDULER=false in env.
+CMD ["./scripts/start-prod.sh"]
