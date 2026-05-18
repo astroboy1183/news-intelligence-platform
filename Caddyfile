@@ -1,0 +1,26 @@
+# Caddy auto-fetches a Let's Encrypt cert for $APP_HOSTNAME on first request.
+# Make sure ports 80 + 443 are open and your DNS A record points at this VM.
+#
+# Reverse proxies everything to the FastAPI service on its internal port.
+
+{$APP_HOSTNAME} {
+    encode zstd gzip
+
+    @options method OPTIONS
+    handle @options {
+        respond 204
+    }
+
+    reverse_proxy backend:8000 {
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    # Sensible defaults
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+}

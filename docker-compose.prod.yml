@@ -1,0 +1,72 @@
+# Production overlay. Use with the base file:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Differences from dev:
+#   - postgres/redis NOT exposed to the host network (only on internal docker net)
+#   - backend + worker containers built from ./backend/Dockerfile
+#   - caddy in front for TLS termination via Let's Encrypt
+#   - prefect/minio dev containers dropped (we don't need them for v1 prod)
+
+services:
+  postgres:
+    ports: !reset []          # remove the dev-only :5432 binding
+    restart: always
+
+  redis:
+    ports: !reset []          # remove dev-only :6379 binding
+    restart: always
+
+  minio: !reset null          # disable in prod (audio deferred)
+  prefect: !reset null        # we use in-process .serve(), no need for separate server
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: news-intelligence-backend:latest
+    container_name: nip_backend
+    restart: always
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-nip}:${POSTGRES_PASSWORD:-nip_pass}@postgres:5432/${POSTGRES_DB:-nip}
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    expose:
+      - "8000"
+
+  worker:
+    image: news-intelligence-backend:latest    # reuse the same image
+    container_name: nip_worker
+    restart: always
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-nip}:${POSTGRES_PASSWORD:-nip_pass}@postgres:5432/${POSTGRES_DB:-nip}
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      backend:
+        condition: service_started
+    command: ["python", "-m", "flows.serve"]
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: nip_caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      APP_HOSTNAME: ${APP_HOSTNAME:?set APP_HOSTNAME in .env to your public hostname}
+    depends_on:
+      - backend
+
+volumes:
+  caddy_data:
+  caddy_config:

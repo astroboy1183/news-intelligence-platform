@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     app_name: str = "News Intelligence Platform"
     environment: str = "dev"
 
+    # Comma-separated origins allowed by CORS. Dev default = "*".
+    # In prod set in .env e.g. "https://newsintel.vercel.app,http://localhost:3000"
+    cors_origins: str = "*"
+
     database_url: str = "postgresql+asyncpg://nip:nip_pass@localhost:5432/nip"
 
     redis_url: str = "redis://localhost:6379/0"
