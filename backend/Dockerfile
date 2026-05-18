@@ -35,4 +35,6 @@ RUN python -c "import nltk; nltk.download('punkt', quiet=True); nltk.download('p
 COPY . .
 
 EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips=*"]
+# Shell form so ${PORT} from Railway/Heroku-style platforms gets expanded.
+# Falls back to 8000 for local dev.
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips=*
