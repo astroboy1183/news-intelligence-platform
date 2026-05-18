@@ -1,8 +1,10 @@
+import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from loguru import logger
 
 from app.api.routes.brief import router as brief_router
 from app.api.routes.entities import router as entities_router
@@ -20,12 +22,23 @@ from app.api.routes.topics import router as topics_router
 from app.api.routes.trends import router as trends_router
 from app.core.config import settings
 from app.core.logging import setup_logging
+from app.services.scheduler import start_scheduled_tasks
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     setup_logging()
-    yield
+    bg_tasks = start_scheduled_tasks()
+    try:
+        yield
+    finally:
+        for task in bg_tasks:
+            task.cancel()
+        for task in bg_tasks:
+            try:
+                await task
+            except (asyncio.CancelledError, Exception) as exc:
+                logger.debug(f"scheduler task {task.get_name()} cancelled: {exc!r}")
 
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)

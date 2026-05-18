@@ -33,10 +33,11 @@ RUN python -c "import nltk; nltk.download('punkt', quiet=True); nltk.download('p
 
 # App code last — most frequent change.
 COPY . .
-RUN chmod +x scripts/start-prod.sh
 
 EXPOSE 8000
-# start-prod.sh runs both the Prefect scheduler (background) and uvicorn
-# (foreground) so a single container handles API + ingest/enrich/cluster.
-# Disable the scheduler half by setting RUN_SCHEDULER=false in env.
-CMD ["./scripts/start-prod.sh"]
+# Shell form so ${PORT} (from Railway/Heroku-style platforms) gets expanded.
+# Falls back to 8000 for local dev. The in-process scheduler in
+# app/services/scheduler.py runs the ingest/enrich/cluster/build pipeline
+# inside this same process — no separate worker needed.
+# Disable by setting RUN_SCHEDULER=false in env.
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips=*
