@@ -17,6 +17,9 @@ dependencies = [
     "pydantic-settings>=2.2",
     # http / parsing
     "httpx>=0.27",
+    # curl_cffi for TLS-fingerprint spoofing — used by the fallback path in
+    # rss_fetcher when sources return 401/403/429/503 (bot blocks).
+    "curl_cffi>=0.7",
     "feedparser>=6.0",
     "trafilatura>=1.10",
     "tldextract>=5.1",
