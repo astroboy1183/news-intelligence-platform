@@ -80,7 +80,14 @@ async def _upsert_topics_by_name(
 
 
 async def enrich_articles(session: AsyncSession, articles: list[Article]) -> list[EnrichmentResult]:
-    """Compute embeddings + entities + topics + sentiment for a batch."""
+    """Compute embeddings + entities + topics + sentiment for a batch.
+
+    All sync ML work is wrapped in asyncio.to_thread so it runs on a thread
+    pool — otherwise the FastAPI event loop is blocked while sentence-transformers
+    + spaCy + KeyBERT do CPU-heavy work, and the API stops responding to requests.
+    """
+    import asyncio
+
     # Heavy imports kept inside the function so importing this module is cheap.
     from app.ml.embeddings import embed_batch
     from app.ml.ner import extract_entities
@@ -92,19 +99,24 @@ async def enrich_articles(session: AsyncSession, articles: list[Article]) -> lis
 
     texts = [headline_plus_lead(a.title, a.lead) for a in articles]
 
-    # 1) Embeddings — one batch call across the whole list (fastest)
-    embeddings = embed_batch(texts)
+    def _heavy_work(texts: list[str]) -> tuple[list, list, list, list]:
+        """All the sync ML work in one function so we to_thread it just once."""
+        embeddings = embed_batch(texts)
+        per_article_entities: list[list[tuple[str, str, int]]] = []
+        per_article_topics: list[list[tuple[str, float]]] = []
+        sentiments: list[float] = []
+        for text in texts:
+            ents = extract_entities(text)
+            per_article_entities.append([(e.name, e.type, e.count) for e in ents])
+            topics = extract_topics(text)
+            per_article_topics.append([(t.name, t.score) for t in topics])
+            sentiments.append(score_sentiment(text))
+        return embeddings, per_article_entities, per_article_topics, sentiments
 
-    # 2) Entities + topics + sentiment per article (each module loads its model lazily)
-    per_article_entities: list[list[tuple[str, str, int]]] = []
-    per_article_topics: list[list[tuple[str, float]]] = []
-    sentiments: list[float] = []
-    for text in texts:
-        ents = extract_entities(text)
-        per_article_entities.append([(e.name, e.type, e.count) for e in ents])
-        topics = extract_topics(text)
-        per_article_topics.append([(t.name, t.score) for t in topics])
-        sentiments.append(score_sentiment(text))
+    # Offload to a worker thread so the event loop stays free for HTTP requests.
+    embeddings, per_article_entities, per_article_topics, sentiments = (
+        await asyncio.to_thread(_heavy_work, texts)
+    )
 
     # 3) Upsert global entity/topic catalogs, get back id maps
     all_entity_keys = list({
