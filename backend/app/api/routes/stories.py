@@ -32,7 +32,7 @@ async def list_stories(
     country: str | None = Query(None, min_length=2, max_length=2),
     region: str | None = Query(None, description="india | global — shortcut over country"),
     state: str | None = Query(None),
-    since_hours: int = Query(72, ge=1, le=720),
+    since_hours: int = Query(24, ge=1, le=720),
     min_sources: int = Query(2, ge=1),
     sort: SortBy = Query("trending"),
     page: int = Query(1, ge=1),
@@ -54,9 +54,14 @@ async def list_stories(
         base = base.where(Story.primary_state == state)
 
     if sort == "trending":
+        # Time-decayed coverage. A story at hour t scores:
+        #   source_count * exp(-t / 4h)
+        # so a 5-outlet story 1h old (≈4.4) beats a 10-outlet story 12h old (≈0.5).
+        # The dashboard's "trending" surfaces fresh momentum, not stale popularity.
+        age_seconds = func.extract("epoch", func.now() - Story.last_updated_at)
+        decayed_score = Story.source_count * func.exp(-age_seconds / 14400.0)
         ordered = base.order_by(
-            Story.velocity_score.desc(),
-            Story.source_count.desc(),
+            decayed_score.desc(),
             Story.last_updated_at.desc(),
         )
     elif sort == "recent":
