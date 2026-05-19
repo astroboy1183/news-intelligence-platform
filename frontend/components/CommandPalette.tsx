@@ -1,7 +1,7 @@
 "use client";
 
 import { Command } from "cmdk";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { api } from "@/lib/api";
@@ -28,8 +28,10 @@ const KIND_BADGE: Record<SearchHit["kind"], { label: string; tone: string }> = {
 };
 
 export default function CommandPalette() {
+  const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const isEmbed = pathname?.startsWith("/embed") ?? false;
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<SearchHit[]>([]);
   const [loading, setLoading] = useState(false);
@@ -104,6 +106,8 @@ export default function CommandPalette() {
     },
     [router],
   );
+
+  if (isEmbed) return null;
 
   if (!open) {
     return (

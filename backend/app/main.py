@@ -8,6 +8,7 @@ from loguru import logger
 
 from app.api.routes.brief import router as brief_router
 from app.api.routes.entities import router as entities_router
+from app.api.routes.feeds import router as feeds_router
 from app.api.routes.health import router as health_router
 from app.api.routes.ingestion import router as ingestion_router
 from app.api.routes.insights import router as insights_router
@@ -70,6 +71,7 @@ app.include_router(trends_router)
 app.include_router(brief_router)
 app.include_router(lookup_router)
 app.include_router(search_router)
+app.include_router(feeds_router)
 app.include_router(ingestion_router)
 
 

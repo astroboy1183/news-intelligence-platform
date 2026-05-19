@@ -30,6 +30,9 @@ export default function NavBar() {
     setOpen(false);
   }, [pathname]);
 
+  // Embed pages are meant to be iframed into other sites — no chrome.
+  if (pathname.startsWith("/embed")) return null;
+
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 

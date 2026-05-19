@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import AutoRefresh from "@/components/AutoRefresh";
 import CommandPalette from "@/components/CommandPalette";
+import KeyboardShortcuts from "@/components/KeyboardShortcuts";
 import NavBar from "@/components/NavBar";
 import Starfield from "@/components/Starfield";
 import Toaster from "@/components/Toaster";
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <NavBar />
         <main className="flex-1">{children}</main>
         <CommandPalette />
+        <KeyboardShortcuts />
         <Toaster />
         <AutoRefresh intervalMs={30_000} />
       </body>

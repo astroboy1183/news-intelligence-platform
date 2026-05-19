@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 /**
@@ -16,12 +16,14 @@ import { useEffect, useRef, useState } from "react";
  *    Success resets the backoff.
  */
 export default function AutoRefresh({ intervalMs = 30_000 }: { intervalMs?: number }) {
+  const pathname = usePathname();
   const router = useRouter();
   const [lastRefreshAt, setLastRefreshAt] = useState<number>(() => Date.now());
   const [now, setNow] = useState<number>(() => Date.now());
   const [paused, setPaused] = useState<boolean>(false);
   const backoffRef = useRef<number>(1);
   const timerRef = useRef<number | null>(null);
+  const isEmbed = pathname?.startsWith("/embed") ?? false;
 
   // Visibility pause: re-render so the indicator can show paused state.
   useEffect(() => {
@@ -76,6 +78,8 @@ export default function AutoRefresh({ intervalMs = 30_000 }: { intervalMs?: numb
   }, []);
 
   const secsAgo = Math.max(0, Math.floor((now - lastRefreshAt) / 1000));
+
+  if (isEmbed) return null;
 
   return (
     <div

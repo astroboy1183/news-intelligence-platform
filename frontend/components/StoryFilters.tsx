@@ -3,6 +3,8 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 
+import FeedExport from "@/components/FeedExport";
+import SavedViews from "@/components/SavedViews";
 import { api } from "@/lib/api";
 import type { StateRollup } from "@/lib/types";
 
@@ -160,6 +162,8 @@ export default function StoryFilters() {
               Clear filters
             </button>
           )}
+          <SavedViews />
+          <FeedExport />
         </div>
       </div>
 
