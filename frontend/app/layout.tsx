@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import AutoRefresh from "@/components/AutoRefresh";
+import CommandPalette from "@/components/CommandPalette";
 import NavBar from "@/components/NavBar";
 import Starfield from "@/components/Starfield";
 import "./globals.css";
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <Starfield />
         <NavBar />
         <main className="flex-1">{children}</main>
+        <CommandPalette />
         <AutoRefresh intervalMs={30_000} />
       </body>
     </html>

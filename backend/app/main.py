@@ -14,6 +14,7 @@ from app.api.routes.insights import router as insights_router
 from app.api.routes.lookup import router as lookup_router
 from app.api.routes.network import router as network_router
 from app.api.routes.predictions import router as predictions_router
+from app.api.routes.search import router as search_router
 from app.api.routes.source_intel import router as source_intel_router
 from app.api.routes.sources import router as sources_router
 from app.api.routes.stories import router as stories_router
@@ -68,6 +69,7 @@ app.include_router(source_intel_router)
 app.include_router(trends_router)
 app.include_router(brief_router)
 app.include_router(lookup_router)
+app.include_router(search_router)
 app.include_router(ingestion_router)
 
 

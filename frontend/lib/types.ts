@@ -240,6 +240,21 @@ export type TriggerResponse = {
   message: string;
 };
 
+export type SearchHit = {
+  kind: "story" | "entity" | "topic";
+  id: number;
+  slug: string;
+  label: string;
+  sublabel: string;
+  href: string;
+  score: number;
+};
+
+export type SearchResponse = {
+  query: string;
+  hits: SearchHit[];
+};
+
 export type BriefSummary = {
   generated_at: string;
   top_stories: Array<{

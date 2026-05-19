@@ -12,6 +12,7 @@ import type {
   Page,
   PredictionAccuracy,
   PredictionItem,
+  SearchResponse,
   SourceHealthSummary,
   SourceItem,
   SourceOverlapRow,
@@ -98,6 +99,9 @@ export const api = {
     get<StateRollup[]>(`/trends/by-state${qs(params)}`),
 
   brief: () => get<BriefSummary>("/brief/today"),
+
+  search: (params: { q: string; limit?: number }) =>
+    get<SearchResponse>(`/search${qs(params)}`),
 
   ingestionSummary: () => get<IngestionSummary>("/ingestion/summary"),
   ingestionRuns: (params: { status?: string; source_slug?: string; page?: number; page_size?: number } = {}) =>

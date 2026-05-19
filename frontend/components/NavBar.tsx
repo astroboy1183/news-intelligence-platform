@@ -50,6 +50,15 @@ export default function NavBar() {
             </Link>
           ))}
         </nav>
+        {/* Search hint sits at the far right — clicking it is also a fallback for
+            users on iOS/Android where ⌘K isn't intuitive. The actual handler lives
+            in CommandPalette which listens on the window. */}
+        <div className="ml-auto hidden md:block">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-700/60 bg-slate-950/40 px-3 py-1 text-xs text-slate-500">
+            <kbd className="font-mono">⌘K</kbd>
+            <span className="text-slate-600">search</span>
+          </span>
+        </div>
       </div>
     </header>
   );

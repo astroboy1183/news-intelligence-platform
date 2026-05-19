@@ -1,9 +1,9 @@
 import Link from "next/link";
 
+import AnomalyCard from "@/components/AnomalyCard";
 import MetricCard from "@/components/MetricCard";
 import PageHeader from "@/components/PageHeader";
 import Panel from "@/components/Panel";
-import TimeAgo from "@/components/TimeAgo";
 import { api } from "@/lib/api";
 import { countryFlag } from "@/lib/format";
 
@@ -58,14 +58,15 @@ export default async function BriefPage() {
 
         <div className="space-y-6">
           <Panel title="⚠ Anomalies">
-            <ul className="space-y-1 text-sm">
-              {brief.anomalies.map((a) => (
-                <li key={a.id} className="flex justify-between gap-2">
-                  <span className="text-slate-300">{a.label || a.type}</span>
-                  <span className="text-cyan-400">{a.severity.toFixed(1)}</span>
-                </li>
-              ))}
-            </ul>
+            {brief.anomalies.length === 0 ? (
+              <div className="text-sm text-slate-500">No anomalies right now.</div>
+            ) : (
+              <div className="grid gap-2">
+                {brief.anomalies.slice(0, 6).map((a) => (
+                  <AnomalyCard key={a.id} anomaly={a} compact />
+                ))}
+              </div>
+            )}
           </Panel>
           <Panel title="🗺 Regional pulse (24h)">
             <ul className="space-y-1 text-sm">
