@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import BreakingNow from "@/components/BreakingNow";
 import MetricCard from "@/components/MetricCard";
 import Panel from "@/components/Panel";
 import Pill from "@/components/Pill";
@@ -28,11 +29,22 @@ export default async function DashboardPage({
   const state = sp.state;
   const sort = sp.sort ?? "trending";
 
-  const [stories, topics, entities, health] = await Promise.all([
+  const [stories, topics, entities, health, breaking] = await Promise.all([
     api.listStories({ sort, region, state, page_size: 13 }),
     api.listTopics({ page_size: 16 }),
     api.listEntities({ page_size: 10 }),
     api.sourcesHealth(),
+    // "Breaking now" = stories touched in the last 2 hours with at least
+    // 3 outlets, sorted by the time-decayed trending score. Same filters
+    // as the rest of the dashboard so it follows the user's region/state.
+    api.listStories({
+      sort: "trending",
+      region,
+      state,
+      since_hours: 2,
+      min_sources: 3,
+      page_size: 6,
+    }),
   ]);
 
   const [hero, ...rest] = stories.items;
@@ -81,6 +93,15 @@ export default async function DashboardPage({
               subtitle="Trending #1 by velocity × source count"
             >
               <StoryCard story={hero} size="hero" />
+            </Panel>
+          )}
+
+          {breaking.items.length > 0 && (
+            <Panel
+              title="⚡ Breaking now"
+              subtitle="Stories that just lit up — fresh in the last 2 hours, multi-sourced"
+            >
+              <BreakingNow stories={breaking.items} />
             </Panel>
           )}
 

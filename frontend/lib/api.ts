@@ -13,6 +13,7 @@ import type {
   PredictionAccuracy,
   PredictionItem,
   SearchResponse,
+  SourceCompareResult,
   SourceHealthSummary,
   SourceItem,
   SourceOverlapRow,
@@ -92,6 +93,8 @@ export const api = {
     get<BreakingPowerItem[]>(`/sources/intelligence/breaking${qs(params)}`),
   sourceIntelOverlap: (params: { days?: number; limit?: number } = {}) =>
     get<SourceOverlapRow[]>(`/sources/intelligence/overlap${qs(params)}`),
+  sourceIntelCompare: (params: { a: string; b: string; days?: number; limit?: number }) =>
+    get<SourceCompareResult>(`/sources/intelligence/compare${qs(params)}`),
 
   trendTopics: (params: { days?: number; top_n?: number } = {}) =>
     get<TrendSeries[]>(`/trends/topics${qs(params)}`),

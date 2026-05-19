@@ -109,10 +109,19 @@ class InsightsSummary(BaseModel):
     coverage_gaps: list[dict]
 
 
+class BriefDailyPoint(BaseModel):
+    """One day's slice of brief activity — drives the 7-day sparkline."""
+    bucket: str  # YYYY-MM-DD
+    new_stories: int
+    escalated: int
+
+
 class BriefSummary(BaseModel):
     generated_at: datetime
     top_stories: list[dict]
     whats_changed: dict
+    whats_changed_prev: dict | None = None  # same shape as whats_changed, prior 24h
+    daily_series: list[BriefDailyPoint] = []  # last 7 days, oldest first
     anomalies: list[AnomalyItem]
     regional_pulse: list[dict]
 

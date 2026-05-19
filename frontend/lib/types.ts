@@ -200,6 +200,32 @@ export type SourceOverlapRow = {
   a_slug: string; b_slug: string; overlap: number; shared_stories: number;
 };
 
+export type SourceCompareInfo = {
+  slug: string;
+  name: string;
+  country: string;
+  total_stories: number;
+};
+
+export type SourceCompareStory = {
+  id: number;
+  slug: string;
+  name: string;
+  source_count: number;
+};
+
+export type SourceCompareResult = {
+  a: SourceCompareInfo;
+  b: SourceCompareInfo;
+  shared_count: number;
+  a_only_count: number;
+  b_only_count: number;
+  jaccard: number;
+  shared: SourceCompareStory[];
+  a_only: SourceCompareStory[];
+  b_only: SourceCompareStory[];
+};
+
 export type TrendPoint = { bucket: string; count: number };
 export type TrendSeries = { name: string; slug: string; points: TrendPoint[] };
 
@@ -255,6 +281,12 @@ export type SearchResponse = {
   hits: SearchHit[];
 };
 
+export type BriefDailyPoint = {
+  bucket: string;
+  new_stories: number;
+  escalated: number;
+};
+
 export type BriefSummary = {
   generated_at: string;
   top_stories: Array<{
@@ -262,6 +294,8 @@ export type BriefSummary = {
     primary_country: string | null; primary_state: string | null;
   }>;
   whats_changed: { new: number; escalated: number; resolved: number };
+  whats_changed_prev?: { new: number; escalated: number; resolved: number } | null;
+  daily_series?: BriefDailyPoint[];
   anomalies: AnomalyItem[];
   regional_pulse: Array<{ state: string; stories_24h: number }>;
 };

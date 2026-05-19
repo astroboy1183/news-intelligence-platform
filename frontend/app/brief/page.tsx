@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import AnomalyCard from "@/components/AnomalyCard";
-import MetricCard from "@/components/MetricCard";
+import DeltaMetric from "@/components/DeltaMetric";
 import PageHeader from "@/components/PageHeader";
 import Panel from "@/components/Panel";
 import { api } from "@/lib/api";
@@ -20,9 +20,29 @@ export default async function BriefPage() {
       />
 
       <section className="mb-6 grid gap-4 md:grid-cols-3">
-        <MetricCard title="New stories (24h)" value={brief.whats_changed.new} />
-        <MetricCard title="Escalated" value={brief.whats_changed.escalated} subtitle="≥5 outlets" />
-        <MetricCard title="Resolved" value={brief.whats_changed.resolved} subtitle="no coverage in 24h" />
+        <DeltaMetric
+          tone="cyan"
+          title="New stories (24h)"
+          value={brief.whats_changed.new}
+          prev={brief.whats_changed_prev?.new ?? null}
+          series={(brief.daily_series ?? []).map((p) => p.new_stories)}
+          subtitle="first seen in last day"
+        />
+        <DeltaMetric
+          tone="amber"
+          title="Escalated"
+          value={brief.whats_changed.escalated}
+          prev={brief.whats_changed_prev?.escalated ?? null}
+          series={(brief.daily_series ?? []).map((p) => p.escalated)}
+          subtitle="≥5 outlets joined"
+        />
+        <DeltaMetric
+          tone="emerald"
+          title="Resolved"
+          value={brief.whats_changed.resolved}
+          prev={brief.whats_changed_prev?.resolved ?? null}
+          subtitle="no coverage in 24h"
+        />
       </section>
 
       <div className="grid gap-6 lg:grid-cols-3">

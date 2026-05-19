@@ -2,7 +2,8 @@
 
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -82,3 +83,110 @@ async def overlap(
         ))
     rows.sort(key=lambda r: r.overlap, reverse=True)
     return rows[:limit]
+
+
+class CompareSourceInfo(BaseModel):
+    slug: str
+    name: str
+    country: str
+    total_stories: int
+
+
+class CompareStoryItem(BaseModel):
+    id: int
+    slug: str
+    name: str
+    source_count: int
+
+
+class CompareResult(BaseModel):
+    a: CompareSourceInfo
+    b: CompareSourceInfo
+    shared_count: int
+    a_only_count: int
+    b_only_count: int
+    jaccard: float
+    shared: list[CompareStoryItem]
+    a_only: list[CompareStoryItem]
+    b_only: list[CompareStoryItem]
+
+
+@router.get("/compare", response_model=CompareResult)
+async def compare_sources(
+    a: str = Query(..., min_length=1),
+    b: str = Query(..., min_length=1),
+    days: int = Query(30, ge=1, le=120),
+    limit: int = Query(10, ge=1, le=50),
+    db: AsyncSession = Depends(get_db),
+) -> CompareResult:
+    """Two-source drill-down: what they agree on vs what each missed.
+
+    Powers the source-comparison matrix on the dashboard — instead of just
+    showing 'Jaccard = 0.42', users can click two outlets and see the actual
+    stories that drive (or don't drive) the overlap.
+    """
+    if a == b:
+        raise HTTPException(status_code=400, detail="Pick two different sources to compare")
+
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+
+    src_rows = (await db.execute(
+        select(Source.id, Source.slug, Source.name, Source.country)
+        .where(Source.slug.in_([a, b]))
+    )).all()
+    by_slug = {slug: (sid, name, country) for (sid, slug, name, country) in src_rows}
+    if a not in by_slug or b not in by_slug:
+        raise HTTPException(status_code=404, detail="One or both source slugs not found")
+    a_id, a_name, a_country = by_slug[a]
+    b_id, b_name, b_country = by_slug[b]
+
+    # Per-source story_id sets within the window.
+    set_stmt = (
+        select(Article.source_id, Article.story_id)
+        .where(
+            Article.fetched_at >= cutoff,
+            Article.story_id.is_not(None),
+            Article.source_id.in_([a_id, b_id]),
+        )
+        .distinct()
+    )
+    a_set: set[int] = set()
+    b_set: set[int] = set()
+    for src_id, story_id in (await db.execute(set_stmt)).all():
+        (a_set if src_id == a_id else b_set).add(int(story_id))
+
+    shared_ids = a_set & b_set
+    a_only_ids = a_set - b_set
+    b_only_ids = b_set - a_set
+    union = len(a_set) + len(b_set) - len(shared_ids)
+    jaccard = len(shared_ids) / union if union else 0.0
+
+    async def top_stories(ids: set[int]) -> list[CompareStoryItem]:
+        if not ids:
+            return []
+        rows = (await db.execute(
+            select(Story.id, Story.slug, Story.name, Story.source_count)
+            .where(Story.id.in_(ids))
+            .order_by(Story.source_count.desc(), Story.last_updated_at.desc())
+            .limit(limit)
+        )).all()
+        return [
+            CompareStoryItem(id=sid, slug=slug, name=name, source_count=int(sc))
+            for (sid, slug, name, sc) in rows
+        ]
+
+    shared = await top_stories(shared_ids)
+    a_only = await top_stories(a_only_ids)
+    b_only = await top_stories(b_only_ids)
+
+    return CompareResult(
+        a=CompareSourceInfo(slug=a, name=a_name, country=a_country, total_stories=len(a_set)),
+        b=CompareSourceInfo(slug=b, name=b_name, country=b_country, total_stories=len(b_set)),
+        shared_count=len(shared_ids),
+        a_only_count=len(a_only_ids),
+        b_only_count=len(b_only_ids),
+        jaccard=round(jaccard, 3),
+        shared=shared,
+        a_only=a_only,
+        b_only=b_only,
+    )
