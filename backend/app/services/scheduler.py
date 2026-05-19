@@ -113,11 +113,16 @@ def start_scheduled_tasks() -> list[asyncio.Task]:
         return []
 
     tasks: list[asyncio.Task] = []
+    # Tight cadence so freshly ingested articles flow into stories within ~2 cycles
+    # (ingest → enrich → cluster → build) instead of the original ~22min worst case.
+    # The heavy ML work in enrich is offloaded to a worker thread via asyncio.to_thread,
+    # so tighter cadence doesn't block the event loop. _loop serializes ticks per task,
+    # so a slow run just pushes the next one out — it never overlaps with itself.
     schedule = [
         ("ingest",        _ingest_all,          120,  "SCHEDULE_INGEST"),
-        ("enrich",        _enrich_batch,        300,  "SCHEDULE_ENRICH"),
-        ("cluster",       _cluster_pass,        300,  "SCHEDULE_CLUSTER"),
-        ("build_stories", _build_stories_pass,  600,  "SCHEDULE_BUILD"),
+        ("enrich",        _enrich_batch,        120,  "SCHEDULE_ENRICH"),
+        ("cluster",       _cluster_pass,        120,  "SCHEDULE_CLUSTER"),
+        ("build_stories", _build_stories_pass,  180,  "SCHEDULE_BUILD"),
         ("intelligence",  _intelligence_pass,   1800, "SCHEDULE_INTEL"),
     ]
     for name, fn, interval, env_key in schedule:

@@ -91,32 +91,35 @@ async def _create_new_story(session: AsyncSession, seed_article: Article) -> Sto
 
 
 async def _recompute_story_stats(session: AsyncSession, story_ids: set[int]) -> None:
-    """Update article_count, source_count, last_updated_at, centroid for the given stories."""
+    """Update article_count, source_count, last_updated_at, centroid for the given stories.
+
+    last_updated_at is set to now() because this function only runs after new articles
+    were just assigned to the story — the story was, by definition, just updated.
+    We can't use MAX(published_at) since many sources backdate/syndicate articles with
+    stale timestamps, which would prevent last_updated_at from advancing and keep fresh
+    stories invisible on the dashboard's trending/recent sorts.
+    """
     if not story_ids:
         return
-    # Aggregate counts in one query.
     stmt = text("""
         SELECT story_id,
                COUNT(*) AS article_count,
-               COUNT(DISTINCT source_id) AS source_count,
-               MAX(COALESCE(published_at, fetched_at)) AS last_at
+               COUNT(DISTINCT source_id) AS source_count
         FROM article
         WHERE story_id = ANY(:ids)
         GROUP BY story_id
     """).bindparams(bindparam("ids", value=list(story_ids)))
     rows = (await session.execute(stmt)).all()
 
-    # Centroid is set on story creation; kNN uses article embeddings, so we
-    # skip recomputing centroid here. A periodic refresh job can do it later
-    # using a raw SQL UPDATE that casts the AVG result back to vector.
-    for sid, article_count, source_count, last_at in rows:
+    now = datetime.now(timezone.utc)
+    for sid, article_count, source_count in rows:
         await session.execute(
             update(Story)
             .where(Story.id == sid)
             .values(
                 article_count=int(article_count),
                 source_count=int(source_count),
-                last_updated_at=last_at or datetime.now(timezone.utc),
+                last_updated_at=now,
             )
         )
 
