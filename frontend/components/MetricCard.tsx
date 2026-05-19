@@ -29,7 +29,7 @@ export default function MetricCard({
         {value}
       </div>
       {subtitle && (
-        <div className="mt-2 text-xs text-slate-500">{subtitle}</div>
+        <div className="mt-2 text-xs text-slate-400">{subtitle}</div>
       )}
     </div>
   );

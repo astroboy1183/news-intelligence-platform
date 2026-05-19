@@ -5,6 +5,7 @@ import AutoRefresh from "@/components/AutoRefresh";
 import CommandPalette from "@/components/CommandPalette";
 import NavBar from "@/components/NavBar";
 import Starfield from "@/components/Starfield";
+import Toaster from "@/components/Toaster";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <NavBar />
         <main className="flex-1">{children}</main>
         <CommandPalette />
+        <Toaster />
         <AutoRefresh intervalMs={30_000} />
       </body>
     </html>

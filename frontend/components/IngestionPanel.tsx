@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import MetricCard from "@/components/MetricCard";
 import Panel from "@/components/Panel";
 import TimeAgo from "@/components/TimeAgo";
 import { api } from "@/lib/api";
+import { toast } from "@/lib/toast";
 import type { IngestionRunItem, IngestionSummary } from "@/lib/types";
 
 const REFRESH_INTERVAL_MS = 8_000;
@@ -46,6 +47,10 @@ export default function IngestionPanel({
   const [triggering, setTriggering] = useState(false);
   const [triggerMsg, setTriggerMsg] = useState<string | null>(null);
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  // Pause polling while the tab is hidden — matches AutoRefresh behavior.
+  // Also we only surface error toasts after N consecutive failures so a
+  // single network blip doesn't spam the user; counter resets on success.
+  const consecFailRef = useRef(0);
 
   const refresh = useCallback(async () => {
     try {
@@ -56,14 +61,28 @@ export default function IngestionPanel({
       setSummary(s);
       setRuns(r.items);
       setLastRefreshed(new Date());
-    } catch {
-      // ignore transient errors during page lifecycle
+      consecFailRef.current = 0;
+    } catch (e) {
+      consecFailRef.current += 1;
+      // First two failures are silent (transient). After that we tell the user
+      // so they know the table isn't quietly stale.
+      if (consecFailRef.current === 3) {
+        toast(
+          `Ingestion data isn't refreshing — ${
+            e instanceof Error ? e.message : "unknown error"
+          }`,
+          { tone: "error" },
+        );
+      }
     }
   }, [statusFilter]);
 
   useEffect(() => {
     refresh();
-    const id = setInterval(refresh, REFRESH_INTERVAL_MS);
+    const id = setInterval(() => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      refresh();
+    }, REFRESH_INTERVAL_MS);
     return () => clearInterval(id);
   }, [refresh]);
 
@@ -73,11 +92,14 @@ export default function IngestionPanel({
     try {
       const res = await api.triggerIngestion();
       setTriggerMsg(res.message);
+      toast(res.message, { tone: res.status === "started" ? "success" : "info" });
       // immediate optimistic refresh, then a follow-up after a few seconds
       setTimeout(refresh, 1_500);
       setTimeout(refresh, 4_000);
     } catch (e: unknown) {
-      setTriggerMsg(e instanceof Error ? e.message : "Trigger failed");
+      const msg = e instanceof Error ? e.message : "Trigger failed";
+      setTriggerMsg(msg);
+      toast(`Trigger failed: ${msg}`, { tone: "error" });
     } finally {
       setTriggering(false);
     }
@@ -176,8 +198,8 @@ export default function IngestionPanel({
           </select>
         }
       >
-        <div className="overflow-hidden rounded-xl border border-slate-800">
-          <table className="w-full text-left text-sm">
+        <div className="overflow-x-auto rounded-xl border border-slate-800">
+          <table className="w-full min-w-[920px] text-left text-sm">
             <thead className="bg-slate-900/60 text-xs uppercase tracking-wider text-slate-400">
               <tr>
                 <th className="px-3 py-2">Source</th>

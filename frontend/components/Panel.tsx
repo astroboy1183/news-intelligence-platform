@@ -21,7 +21,7 @@ export default function Panel({
                 {title}
               </h2>
             )}
-            {subtitle && <p className="mt-0.5 text-xs text-slate-500">{subtitle}</p>}
+            {subtitle && <p className="mt-0.5 text-xs text-slate-400">{subtitle}</p>}
           </div>
           {action}
         </header>

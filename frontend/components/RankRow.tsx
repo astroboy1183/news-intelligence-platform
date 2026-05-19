@@ -20,7 +20,7 @@ export default function RankRow({
       </span>
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm text-slate-100">{label}</div>
-        {subtext && <div className="truncate text-xs text-slate-500">{subtext}</div>}
+        {subtext && <div className="truncate text-xs text-slate-400">{subtext}</div>}
       </div>
       <span className="shrink-0 text-sm font-semibold text-cyan-400">{value}</span>
     </div>
